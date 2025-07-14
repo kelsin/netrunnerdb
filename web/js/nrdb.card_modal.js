@@ -61,7 +61,7 @@
         if(card.indeck > 0) slice = 1; // enable only first input to allow user to remove invalid agendas if they wish
         qtyelt.find('label').slice(slice).addClass("disabled").find('input[type=radio]').attr("disabled", true);
       }
-      if(card.code == Identity.code) {
+      if(is_card_identity(card)) {
         qtyelt.find('label').addClass("disabled").find('input[type=radio]').attr("disabled", true);
       }
 

@@ -1,0 +1,356 @@
+{% extends '/layout.html.twig' %} {% block head %}
+
+<script src="{{ asset('/js/nrdb.card_modal.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/publish_cube_form.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/cubeview.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script type="text/javascript">
+
+  var Identity = null,
+    Cube = {{ cube|json_encode|raw }},
+    SelectedCube = Cube,
+    DisplaySort = 'type',
+    DisplaySortSecondary = 'name',
+    Order = 1;
+</script>
+{% endblock %} {% block body %}
+<div class="container cube">
+  <div class="row">
+    <div class="col-md-6 col-md-push-3">
+      <!-- Title -->
+      <div>
+        <h1 style="border-bottom: 1px solid lightgray">{{ cube.name }}</h1>
+      </div>
+
+      <!-- Buttons -->
+      <div class="btn-actions text-center">
+        {% if cube.is_owner %}
+        <div class="btn-group" role="group" style="margin-bottom: 5px">
+          <button type="button" id="btn-print" class="btn btn-info btn-sm">
+            <span class="glyphicon glyphicon-print"></span> Print
+          </button>
+        </div>
+        <div class="btn-group" role="group" style="margin-bottom: 5px">
+          <button type="button" id="btn-pnp" class="btn btn-pnp btn-sm">
+            <span class="glyphicon glyphicon-print"></span> Print &amp; Play
+          </button>
+        </div>
+        <div class="btn-group" role="group" style="margin-bottom: 5px">
+          <button type="button" id="btn-edit" class="btn btn-primary btn-sm">
+            <span class="glyphicon glyphicon-pencil"></span> Edit
+          </button>
+        </div>
+        <div class="btn-group" role="group" style="margin-bottom: 5px">
+          <button
+            type="button"
+            id="btn-publish"
+            disabled="disabled"
+            class="btn btn-success btn-sm"
+          >
+            <span class="glyphicon glyphicon-share"></span> Publish
+          </button>
+        </div>
+        <div class="btn-group" role="group" style="margin-bottom: 5px">
+          <button type="button" id="btn-delete" class="btn btn-danger btn-sm">
+            <span class="glyphicon glyphicon-remove"></span> Delete
+          </button>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="btn-actions text-center hidden-print">
+        <div class="btn-group" style="margin-bottom: 5px">
+          <button
+            type="button"
+            class="btn btn-default btn-sm dropdown-toggle"
+            data-toggle="dropdown"
+          >
+            <span class="glyphicon glyphicon-sort"></span>
+            Sort
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu" id="menu-sort">
+            <li>
+              <a href="#" id="btn-sort-type"
+                ><label
+                  ><input type="radio" name="sort-order" checked="checked" />by
+                  Type</label
+                ></a
+              >
+            </li>
+            <li>
+              <a href="#" id="btn-sort-number"
+                ><label
+                  ><input type="radio" name="sort-order" />by Set</label
+                ></a
+              >
+            </li>
+            <li>
+              <a href="#" id="btn-sort-faction"
+                ><label
+                  ><input type="radio" name="sort-order" />by Faction</label
+                ></a
+              >
+            </li>
+            <li>
+              <a href="#" id="btn-sort-faction-type"
+                ><label
+                  ><input type="radio" name="sort-order" />by Faction, then
+                  Type</label
+                ></a
+              >
+            </li>
+            <li>
+              <a href="#" id="btn-sort-faction-number"
+                ><label
+                  ><input type="radio" name="sort-order" />by Faction, then
+                  Set</label
+                ></a
+              >
+            </li>
+            <li>
+              <a href="#" id="btn-sort-title"
+                ><label
+                  ><input type="radio" name="sort-order" />by Name</label
+                ></a
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="btn-group" style="margin-bottom: 5px">
+          <button
+            type="button"
+            class="btn btn-default btn-sm dropdown-toggle"
+            data-toggle="dropdown"
+          >
+            <span class="glyphicon glyphicon-download"></span> Download
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu">
+            <li><a href="#" id="btn-download-text">Text file</a></li>
+          </ul>
+        </div>
+        <div class="btn-group" style="margin-bottom: 5px">
+          <button
+            type="button"
+            class="btn btn-default btn-sm dropdown-toggle"
+            data-toggle="dropdown"
+          >
+            <span class="glyphicon glyphicon-export"></span> Export
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu">
+            <li><a href="#" id="btn-display-plain">Plain</a></li>
+            <li><a href="#" id="btn-display-bbcode">bbCode</a></li>
+            <li><a href="#" id="btn-display-markdown">Markdown</a></li>
+            <li><a href="#" id="btn-display-jintekinet">Jinteki.net</a></li>
+            <li>
+              <a href="#" id="btn-export-tournament-sheet"
+                >Tournament Sheet PDF</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {% include '/Export/modal-tournament-sheet.html.twig' %}
+
+      <div id="cube">
+        <!-- Identity and Stats -->
+        <div class="row">
+          <div class="col-sm-12">
+            <h3 id="identity"></h3>
+            <div id="influence"></div>
+            <div id="agendapoints"></div>
+            <div id="cardcount"></div>
+            <div id="latestpack"></div>
+            <div id="restricted"></div>
+            <div id="limited"></div>
+          </div>
+          <!-- /.col-sm-9 -->
+        </div>
+        <!-- /.row -->
+        <!-- Identity and Stats -->
+
+        <!-- Cube Content -->
+        <div class="row" id="cube-content" style="margin-bottom: 10px"></div>
+        <!-- /#cube-content -->
+        <!-- Cube Content -->
+      </div>
+      <!-- /#cube -->
+
+      <!-- Timestamp -->
+      <p class="text-right">
+        Last updated
+        <time
+          datetime="{{ cube.date_update|date('c') }}"
+          title="{{ cube.date_update|date('Y-m-d H:i:s P') }}"
+          >{{ cube.date_update|date('j M Y') }}</time
+        >
+      </p>
+
+      <!-- Tools -->
+      <div class="hidden-print">
+        <!-- Description -->
+        {% if cube.description %}
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Description</h3>
+          </div>
+          <div class="panel-body" id="description"></div>
+        </div>
+        {% endif %}
+        <!-- Description -->
+
+        <!-- Graphs -->
+        <table class="table table-condensed" id="table-graph-costs">
+          <thead>
+            <tr>
+              <th colspan="1">
+                <span class="glyphicon glyphicon-stats"></span> Repartition by
+                Cost
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div id="costChart"></div></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="table table-condensed" id="table-graph-strengths">
+          <thead>
+            <tr>
+              <th colspan="1">
+                <span class="glyphicon glyphicon-stats"></span> Repartition by
+                Strength
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div id="strengthChart"></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- .container -->
+
+<!-- Modal -->
+<div
+  class="modal fade"
+  id="deleteModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="deleteModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-hidden="true"
+        >
+          &times;
+        </button>
+        <h3 class="modal-title">Delete cube</h3>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-12">
+            <form
+              action="{{ path('cube_delete') }}"
+              method="POST"
+              enctype="application/x-www-form-urlencoded"
+              id="delete-cube-form"
+            >
+              <input
+                type="hidden"
+                name="cube_uuid"
+                id="delete-cube-uuid"
+                value=""
+              />
+              <p>
+                Are you sure that you want to delete the cube
+                <b id="delete-cube-name"></b>?
+              </p>
+              <div class="pull-right">
+                <button type="submit" class="btn btn-danger">
+                  Yes, delete
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-default"
+                  onclick="$('#deleteModal').modal('hide')"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+          <!-- /#modal-info -->
+        </div>
+        <!-- /.row -->
+      </div>
+      <!-- /.modal-body -->
+    </div>
+    <!-- /.modal-content -->
+  </div>
+  <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<!-- Modal -->
+
+<!-- Modal -->
+<div
+  class="modal fade"
+  id="exportModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="exportModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-hidden="true"
+        >
+          &times;
+        </button>
+        <h3 class="modal-title" id="exportModalLabel">Export cube</h3>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <textarea
+                class="form-control"
+                id="export-cube"
+                rows="20"
+              ></textarea>
+            </div>
+          </div>
+          <!-- /#modal-info -->
+        </div>
+        <!-- /.row -->
+      </div>
+      <!-- /.modal-body -->
+    </div>
+    <!-- /.modal-content -->
+  </div>
+  <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<!-- Modal -->
+
+{% endblock %}

@@ -19,6 +19,188 @@ function makeCycleAndPackPosition(pack) {
   return String(1000 + pack.cycle.position) + String(1000 + pack.position);
 }
 
+function getCubeDisplayDescriptions(sort) {
+    var dd = {
+        type: [
+            [
+                // first column
+                {
+                    id: "identity-runner",
+                    label: "Runners",
+                    image: "/images/icons.svg#type-identity",
+                },
+                {
+                    id: "event",
+                    label: "Event",
+                    image: "/images/icons.svg#type-event",
+                },
+                {
+                    id: "hardware",
+                    label: "Hardware",
+                    image: "/images/icons.svg#type-hardware",
+                },
+                {
+                    id: "resource",
+                    label: "Resource",
+                    image: "/images/icons.svg#type-resource",
+                },
+                {
+                    id: "icebreaker",
+                    label: "Icebreaker",
+                    image: "/images/icons.svg#type-program",
+                },
+                {
+                    id: "program",
+                    label: "Program",
+                    image: "/images/icons.svg#type-program",
+                },
+                {
+                    id: "decoder",
+                    label: "Breaker - Decoder",
+                    image: "/images/icons.svg#type-program",
+                },
+                {
+                    id: "fracter",
+                    label: "Breaker - Fracter",
+                    image: "/images/icons.svg#type-program",
+                },
+                {
+                    id: "killer",
+                    label: "Breaker - Killer",
+                    image: "/images/icons.svg#type-program",
+                },
+                {
+                    id: "breaker-multi",
+                    label: "Breaker - Multi",
+                    image: "/images/icons.svg#type-program",
+                },
+                {
+                    id: "breaker-none",
+                    label: "Breaker - Other",
+                    image: "/images/icons.svg#type-program",
+                },
+            ],
+            [
+                // second column - corp
+                {
+                    id: "identity-corp",
+                    label: "Corps",
+                    image: "/images/icons.svg#type-identity",
+                },
+                {
+                    id: "agenda",
+                    label: "Agenda",
+                    image: "/images/icons.svg#type-agenda",
+                },
+                {
+                    id: "asset",
+                    label: "Asset",
+                    image: "/images/icons.svg#type-asset",
+                },
+                {
+                    id: "upgrade",
+                    label: "Upgrade",
+                    image: "/images/icons.svg#type-upgrade",
+                },
+                {
+                    id: "operation",
+                    label: "Operation",
+                    image: "/images/icons.svg#type-operation",
+                },
+                {
+                    id: "barrier",
+                    label: "Ice - Barrier",
+                    image: "/images/icons.svg#type-ice",
+                },
+                {
+                    id: "code-gate",
+                    label: "Ice - Code Gate",
+                    image: "/images/icons.svg#type-ice",
+                },
+                {
+                    id: "sentry",
+                    label: "Ice - Sentry",
+                    image: "/images/icons.svg#type-ice",
+                },
+                {
+                    id: "ice-multi",
+                    label: "Ice - Multi",
+                    image: "/images/icons.svg#type-ice",
+                },
+                {
+                    id: "ice-none",
+                    label: "Ice - Other",
+                    image: "/images/icons.svg#type-ice",
+                },
+            ],
+        ],
+        faction: [
+            [
+                {
+                    id: "anarch",
+                    label: "Anarch",
+                },
+                {
+                    id: "criminal",
+                    label: "Criminal",
+                },
+                {
+                    id: "shaper",
+                    label: "Shaper",
+                },
+                {
+                    id: "adam",
+                    label: "Adam",
+                },
+                {
+                    id: "apex",
+                    label: "Apex",
+                },
+                {
+                    id: "sunny-lebeau",
+                    label: "Sunny Lebeau",
+                },
+                {
+                    id: "neutral-runner",
+                    label: "Neutral Runner",
+                },
+            ],
+            [
+                {
+                    id: "haas-bioroid",
+                    label: "Haas-Bioroid",
+                },
+                {
+                    id: "jinteki",
+                    label: "Jinteki",
+                },
+                {
+                    id: "nbn",
+                    label: "NBN",
+                },
+                {
+                    id: "weyland-consortium",
+                    label: "Weyland Consortium",
+                },
+                {
+                    id: "neutral-corp",
+                    label: "Neutral Corp",
+                },
+            ],
+        ],
+        number: [],
+        title: [
+            [
+                {
+                    id: "cards",
+                    label: "Cards",
+                },
+            ],
+        ],
+    };
+    return dd[sort];
+}
+
 function getDisplayDescriptions(sort) {
     var dd = {
         'type': [
@@ -294,6 +476,232 @@ function get_card_legality_icons(card) {
     return '';
 }
 
+function update_cube(options) {
+    var restrainOneColumn = false;
+    if (options) {
+        if (options.restrainOneColumn)
+            restrainOneColumn = options.restrainOneColumn;
+    }
+
+    var displayDescription = getCubeDisplayDescriptions(DisplaySort);
+    if (displayDescription == null) return;
+
+    if (DisplaySort === "number" && displayDescription.length === 0) {
+        var rows = [];
+        NRDB.data.packs.find().forEach(function (pack) {
+            rows.push({ id: makeCycleAndPackPosition(pack), label: pack.name });
+        });
+        displayDescription.push(rows);
+    }
+    if (restrainOneColumn && displayDescription.length == 2) {
+        displayDescription = [
+            displayDescription[0].concat(displayDescription[1]),
+        ];
+    }
+
+    $("#cube-content").empty();
+    var cols_size = 12 / displayDescription.length;
+    for (var colnum = 0; colnum < displayDescription.length; colnum++) {
+        var rows = displayDescription[colnum];
+
+        var div = $("<div>")
+            .addClass("col-sm-" + cols_size)
+            .appendTo($("#cube-content"));
+        for (var rownum = 0; rownum < rows.length; rownum++) {
+            var row = rows[rownum];
+            var item = $(`<h5>${row.label} (<span></span>)</h5>`).hide();
+            if (row.image) {
+                item = $(
+                    `<h5><svg class="typeIcon" aria-label="${row.label}"><use xlink:href="${row.image}"></use></svg>${row.label} (<span></span>)</h5>`,
+                ).hide();
+            } else if (DisplaySort == "faction") {
+                $(
+                    '<span class="icon icon-' +
+                        row.id +
+                        " " +
+                        row.id +
+                        '"></span>',
+                ).prependTo(item);
+            }
+            var content = $('<div class="cube-' + row.id + '"></div>');
+            div.append(item).append(content);
+        }
+    }
+
+    InfluenceLimit = 0;
+    var cabinet = {};
+
+    var orderBy = {};
+    switch (DisplaySort) {
+        case "type":
+            orderBy["type_code"] = 1;
+            break;
+        case "faction":
+            orderBy["faction_code"] = 1;
+            break;
+        case "number":
+            orderBy["code"] = 1;
+            break;
+        case "title":
+            orderBy["title"] = 1;
+            break;
+    }
+    switch (DisplaySortSecondary) {
+        case "type":
+            orderBy["type_code"] = 1;
+            break;
+        case "faction":
+            orderBy["faction_code"] = 1;
+            break;
+        case "number":
+            orderBy["code"] = 1;
+            break;
+    }
+    orderBy["title"] = 1;
+
+    var latestpack = undefined;
+    var influenceSpent = {};
+
+    NRDB.data.cards
+        .find(
+            {
+                incube: { $gt: 0 },
+            },
+            { $orderBy: orderBy },
+        )
+        .forEach(function (card) {
+            if (
+                latestpack === undefined ||
+                latestpack.cycle.position < card.pack.cycle.position ||
+                (latestpack.cycle.position == card.pack.cycle.position &&
+                    latestpack.position < card.pack.position)
+            ) {
+                latestpack = card.pack;
+            }
+
+            var influence = "";
+            var criteria = null;
+            var additional_info =
+                get_influence_penalty_icons(card, card.incube) + influence;
+
+            if (DisplaySort === "type") {
+                ((criteria = card.type_code),
+                    (keywords = card.keywords
+                        ? card.keywords.toLowerCase().split(" - ")
+                        : []));
+                if (criteria == "identity") {
+                    criteria = card.type_code + "-" + card.side_code;
+                }
+                if (criteria == "ice") {
+                    var ice_type = [];
+                    if (keywords.indexOf("barrier") >= 0)
+                        ice_type.push("barrier");
+                    if (keywords.indexOf("code gate") >= 0)
+                        ice_type.push("code-gate");
+                    if (keywords.indexOf("sentry") >= 0)
+                        ice_type.push("sentry");
+                    switch (ice_type.length) {
+                        case 0:
+                            criteria = "ice-none";
+                            break;
+                        case 1:
+                            criteria = ice_type.pop();
+                            break;
+                        default:
+                            y;
+                            criteria = "ice-multi";
+                            break;
+                    }
+                }
+                if (criteria == "program") {
+                    if (keywords.indexOf("icebreaker") >= 0) {
+                        var breaker_type = [];
+                        if (keywords.indexOf("decoder") >= 0)
+                            breaker_type.push("decoder");
+                        if (keywords.indexOf("killer") >= 0)
+                            breaker_type.push("killer");
+                        if (keywords.indexOf("fracter") >= 0)
+                            breaker_type.push("fracter");
+                        switch (breaker_type.length) {
+                            case 0:
+                                criteria = "breaker-none";
+                                break;
+                            case 1:
+                                criteria = breaker_type.pop();
+                                break;
+                            default:
+                                y;
+                                criteria = "breaker-multi";
+                                break;
+                        }
+                    }
+                }
+            } else if (DisplaySort === "faction") {
+                criteria = card.faction_code;
+            } else if (DisplaySort === "number") {
+                criteria = makeCycleAndPackPosition(card.pack);
+            } else if (DisplaySort === "title") {
+                criteria = "cards";
+            }
+
+            if (DisplaySort === "number" || DisplaySortSecondary === "number") {
+                var number_of_sets = Math.ceil(card.incube / card.quantity);
+                var alert_number_of_sets =
+                    number_of_sets > 1
+                        ? '<small class="text-warning">' +
+                          number_of_sets +
+                          " sets needed</small> "
+                        : "";
+                additional_info =
+                    '(<span class="small icon icon-' +
+                    card.pack.cycle.code +
+                    '"></span> ' +
+                    card.position +
+                    ") " +
+                    alert_number_of_sets +
+                    influence;
+            }
+
+            var item = $(
+                "<div>" +
+                    card.incube +
+                    'x <a href="' +
+                    Routing.generate("cards_zoom", { card_code: card.code }) +
+                    '" class="card" data-toggle="modal" data-remote="false" data-target="#cardModal" data-index="' +
+                    card.code +
+                    '">' +
+                    card.title +
+                    "</a>" +
+                    additional_info +
+                    "</div>",
+            );
+            item.appendTo($("#cube-content .cube-" + criteria));
+
+            cabinet[criteria] |= 0;
+            cabinet[criteria] = cabinet[criteria] + card.incube;
+            $("#cube-content .cube-" + criteria)
+                .prev()
+                .show()
+                .find("span:last")
+                .html(cabinet[criteria]);
+        });
+    // $("#latestpack").html("Cards up to <i>" + latestpack.name + "</i>");
+    if (NRDB.settings && NRDB.settings.getItem("show-onesies")) {
+        show_onesies();
+    } else {
+        $("#onesies").hide();
+    }
+    if (NRDB.settings && NRDB.settings.getItem("show-cacherefresh")) {
+        show_cacherefresh();
+    } else {
+        $("#cacherefresh").hide();
+    }
+    if ($("#costChart .highcharts-container").length)
+        setTimeout(make_cube_cost_graph, 100);
+    if ($("#strengthChart .highcharts-container").length)
+        setTimeout(make_cube_strength_graph, 100);
+}
+
 function update_deck(options) {
     var restrainOneColumn = false;
     if (options) {
@@ -549,7 +957,7 @@ function check_ampere_agenda_limits() {
 
 function check_startup_constraints() {
     if(MWL && MWL['name'].includes("Startup")){
-        const five_threes = NRDB.data.cards.find({ 
+        const five_threes = NRDB.data.cards.find({
             indeck: { '$gt': 0 },
             type_code: 'agenda'
         }).filter(function (card) {
@@ -1557,3 +1965,162 @@ var hypergeometric = {};
     };
 
 })(window.jQuery);
+
+function make_cube_cost_graph() {
+    var costs = [];
+
+    NRDB.data.cards
+        .find({ incube: { $gt: 0 }, type_code: { $ne: "identity" } })
+        .forEach(function (card) {
+            if (card.cost != null) {
+                if (costs[card.cost] == null) costs[card.cost] = [];
+                if (costs[card.cost][card.type.name] == null)
+                    costs[card.cost][card.type.name] = 0;
+                costs[card.cost][card.type.name] += card.incube;
+            }
+        });
+
+    // costChart
+    var cost_series = [
+        { name: "Event", data: [] },
+        { name: "Resource", data: [] },
+        { name: "Hardware", data: [] },
+        { name: "Program", data: [] },
+        { name: "Operation", data: [] },
+        { name: "Upgrade", data: [] },
+        { name: "Asset", data: [] },
+        { name: "Ice", data: [] },
+    ];
+    var xAxis = [];
+
+    for (var j = 0; j < costs.length; j++) {
+        xAxis.push(j);
+        var data = costs[j];
+        for (var i = 0; i < cost_series.length; i++) {
+            var type_name = cost_series[i].name;
+            cost_series[i].data.push(
+                data && data[type_name] ? data[type_name] : 0,
+            );
+        }
+    }
+
+    $("#costChart").highcharts({
+        colors: [
+            "#FFE66F",
+            "#316861",
+            "#97BF63",
+            "#5863CC",
+            "#FFE66F",
+            "#B22A95",
+            "#FF55DA",
+            "#30CCC8",
+        ],
+        title: {
+            text: null,
+        },
+        credits: {
+            enabled: false,
+        },
+        chart: {
+            type: "column",
+            animation: false,
+        },
+        xAxis: {
+            categories: xAxis,
+        },
+        yAxis: {
+            title: {
+                text: null,
+            },
+            allowDecimals: false,
+            minTickInterval: 1,
+            minorTickInterval: 1,
+            endOnTick: false,
+        },
+        plotOptions: {
+            column: {
+                stacking: "normal",
+            },
+            series: {
+                animation: false,
+            },
+        },
+        series: cost_series,
+    });
+}
+
+function make_cube_strength_graph() {
+    var strengths = [];
+    var ice_types = ["Barrier", "Code Gate", "Sentry", "Other"];
+
+    NRDB.data.cards
+        .find({ incube: { $gt: 0 }, type_code: { $ne: "identity" } })
+        .forEach(function (card) {
+            if (card.strength != null) {
+                if (strengths[card.strength] == null)
+                    strengths[card.strength] = [];
+                var ice_type = "Other";
+                for (var i = 0; i < ice_types.length; i++) {
+                    if (card.keywords.indexOf(ice_types[i]) != -1) {
+                        ice_type = ice_types[i];
+                        break;
+                    }
+                }
+                if (strengths[card.strength][ice_type] == null)
+                    strengths[card.strength][ice_type] = 0;
+                strengths[card.strength][ice_type] += card.incube;
+            }
+        });
+
+    // strengthChart
+    var strength_series = [];
+    for (var i = 0; i < ice_types.length; i++)
+        strength_series.push({ name: ice_types[i], data: [] });
+    var xAxis = [];
+
+    for (var j = 0; j < strengths.length; j++) {
+        xAxis.push(j);
+        var data = strengths[j];
+        for (var i = 0; i < strength_series.length; i++) {
+            var type_name = strength_series[i].name;
+            strength_series[i].data.push(
+                data && data[type_name] ? data[type_name] : 0,
+            );
+        }
+    }
+
+    $("#strengthChart").highcharts({
+        colors: ["#487BCC", "#B8EB59", "#FF6251", "#CCCCCC"],
+        title: {
+            text: null,
+        },
+        credits: {
+            enabled: false,
+        },
+        chart: {
+            type: "column",
+            animation: false,
+        },
+        xAxis: {
+            categories: xAxis,
+        },
+        yAxis: {
+            title: {
+                text: null,
+            },
+            allowDecimals: false,
+            minTickInterval: 1,
+            minorTickInterval: 1,
+            endOnTick: false,
+        },
+        plotOptions: {
+            column: {
+                stacking: "normal",
+            },
+            series: {
+                animation: false,
+            },
+        },
+        series: strength_series,
+    });
+}

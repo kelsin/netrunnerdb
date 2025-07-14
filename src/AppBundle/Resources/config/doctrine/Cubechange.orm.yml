@@ -1,0 +1,32 @@
+AppBundle\Entity\Cubechange:
+    type: entity
+    table: cubechange
+    indexes:
+        cube_saved_index:
+            columns: [ cube_id, saved ]
+    manyToOne:
+        cube:
+            targetEntity: Cube
+            nullable: false
+            inversedBy: changes
+            joinColumn:
+                name: cube_id
+                referencedColumnName: id
+    fields:
+        id:
+            type: integer
+            id: true
+            generator:
+                strategy: AUTO
+        dateCreation:
+            type: datetime
+            column: date_creation
+            gedmo:
+                timestampable:
+                    on:  create
+        variation:
+            type: string
+            length: 1024
+        saved:
+            type: boolean
+    lifecycleCallbacks: {  }

@@ -3,6 +3,7 @@
 namespace AppBundle\Service;
 
 use AppBundle\Behavior\Entity\SlotInterface;
+use AppBundle\Entity\Cubeslot;
 use AppBundle\Entity\Decklist;
 use AppBundle\Entity\Decklistslot;
 use AppBundle\Entity\Deckslot;
@@ -56,6 +57,52 @@ class Judge
         return implode('', array_map(function ($segment) {
             return ucfirst($segment);
         }, explode('_', $string)));
+    }
+
+    /**
+     * Classify cards for cube use
+     */
+    public function cube_classify(array $slots)
+    {
+        $classeur = [];
+        /** @var Cubeslot $slot */
+        foreach ($slots as $slot) {
+            /** @var Card $card */
+            $card = $slot->getCard();
+            $qty = $slot->getQuantity();
+            $elt = ['card' => $card, 'qty' => $qty];
+            $type = $card->getType()->getName();
+            if ($type == "Identity") {
+                $type = ucwords($card->getSide()) . " Identity";
+            }
+            if ($type == "Ice") {
+                $keywords = explode(" - ", $card->getKeywords());
+                if (in_array("Barrier", $keywords)) {
+                    $type = "Barrier";
+                }
+                if (in_array("Code Gate", $keywords)) {
+                    $type = "Code Gate";
+                }
+                if (in_array("Sentry", $keywords)) {
+                    $type = "Sentry";
+                }
+            }
+            if ($type == "Program") {
+                $keywords = explode(" - ", $card->getKeywords());
+                if (in_array("Icebreaker", $keywords)) {
+                    $type = "Icebreaker";
+                }
+            }
+            $elt['faction'] = str_replace(' ', '-', mb_strtolower($card->getFaction()->getName()));
+
+            if (!isset($classeur[$type])) {
+                $classeur[$type] = ["qty" => 0, "slots" => []];
+            }
+            $classeur[$type]["slots"][] = $elt;
+            $classeur[$type]["qty"] += $qty;
+        }
+
+        return $classeur;
     }
 
     /**

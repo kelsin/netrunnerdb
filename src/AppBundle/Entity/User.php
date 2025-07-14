@@ -65,6 +65,11 @@ class User extends BaseUser
     private $decklists;
 
     /**
+     * @var Collection|Cube[]
+     */
+    private $cubes;
+
+    /**
      * @var Collection|Comment[]
      */
     private $comments;
@@ -353,6 +358,14 @@ class User extends BaseUser
     }
 
     /**
+     * @return Cube[]|Collection
+     */
+    public function getCubes()
+    {
+        return $this->cubes;
+    }
+
+    /**
      * @return Comment[]|Collection
      */
     public function getComments()
@@ -479,6 +492,11 @@ class User extends BaseUser
     public function getMaxNbDecks()
     {
         return 6*(100+floor($this->reputation/ 10));
+    }
+
+    public function getMaxNbCubes()
+    {
+        return 6*(10+floor($this->reputation/ 10));
     }
 
     /**

@@ -74,6 +74,91 @@ deck_duplicate:
         _locale: \w\w
         deck_uuid: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
+cube_save:
+    path: /{_locale}/cube/save
+    methods: [POST]
+    defaults:
+        _controller: AppBundle:Cube:save
+        _locale: en
+    requirements:
+        _locale: \w\w
+
+cube_new:
+    path:  /{_locale}/cube/new
+    methods: [GET]
+    defaults:
+        _controller: AppBundle:Cube:new
+        _locale: en
+    requirements:
+        _locale: \w\w
+
+cube_edit:
+    path: /{_locale}/cube/edit/{cube_uuid}
+    methods: [GET]
+    defaults:
+        _controller: AppBundle:Cube:edit
+        _locale: en
+    requirements:
+        _locale: \w\w
+        cube_uuid: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
+cube_view:
+    path: /{_locale}/cube/view/{cube_uuid}
+    methods: [GET]
+    defaults:
+        _controller: AppBundle:Cube:view
+        _locale: en
+    requirements:
+        _locale: \w\w
+        cube_uuid: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
+cube_delete:
+    path: /{_locale}/cube/delete
+    methods: [POST]
+    defaults:
+        _controller: AppBundle:Cube:delete
+        _locale: en
+    requirements:
+        _locale: \w\w
+
+cube_import:
+    path: /{_locale}/cube/import
+    methods: [GET]
+    defaults:
+        _controller: AppBundle:Cube:import
+        _locale: en
+    requirements:
+        _locale: \w\w
+
+cubes_list:
+    path: /{_locale}/cubes
+    methods: [GET]
+    defaults:
+        _controller: AppBundle:Cube:list
+        _locale: en
+    requirements:
+        _locale: \w\w
+
+cubes_download_all:
+    path: /cube/export/all
+    methods: [GET]
+    defaults:
+        _controller: AppBundle:Cube:downloadall
+
+cubes_upload_all:
+    path: /cube/import/all
+    methods: [POST]
+    defaults:
+        _controller: AppBundle:Cube:uploadall
+
+cube_export_text:
+    path: /cube/export/text/{cube_uuid}
+    methods: [GET]
+    defaults:
+        _controller: AppBundle:Cube:textExport
+    requirements:
+        cube_uuid: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
 decks_list:
     path: /{_locale}/decks
     methods: [GET]

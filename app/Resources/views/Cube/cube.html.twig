@@ -1,0 +1,262 @@
+{% extends '/layout.html.twig' %}
+
+{% block head %}
+
+{% include '/Scripts/nsg_formats.html.twig' %}
+
+<script src="{{ asset('/js/nrdb.settings.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/nrdb.card_modal.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/nrdb.smart_filter.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/nrdb.diff.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/cube.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script type="text/javascript">
+
+var Filters = {},
+  FilterQuery = {},
+  CardDivs = [null, {}, {}, {}],
+  Sort = "title",
+  Order = 1,
+  MWL = null,
+        MWL_global_penalty = false,
+  Cube = {{ cube.slots|json_encode|raw }},
+  Cube_uuid = {{ cube.uuid|json_encode|raw }},
+  History = {{ cube.history|json_encode|raw }},
+  DisplaySort = 'type',
+  DisplaySortSecondary = 'name',
+  ShowOnlyCube = false;
+</script>
+
+{% endblock %}
+
+{% block body %}
+<div class="container cube">
+
+{% if cube.unsaved %}
+<div class="alert alert-danger" role="alert" id="cube-unsaved-alert"><span class="glyphicon glyphicon-warning-sign"></span> This cube has unsaved changes. Please save the cube or cancel the changes before making further edits.</div>
+{% endif %}
+
+<div class="row">
+
+<!-- Left-side Column -->
+<div class="col-md-6" id="cube">
+
+<!-- Stats -->
+<div class="row">
+  <div id="cardcount"></div>
+</div><!-- /.row -->
+<!-- Stats -->
+
+<!-- Cube Content -->
+<div class="row" id="cube-content" style="margin-bottom:1em;min-height:300px">
+</div><!-- /#cube-content -->
+<!-- cube Content -->
+
+<form method="POST" action="{{ path('cube_save') }}" id="save_form" role="form" style="margin-bottom:1em">
+  <input type="hidden" id="cube-save-id" name="id" value="{{ cube.id }}">
+  <input type="hidden" id="cube-save-as-copy" name="copy" value="0">
+  <input type="hidden" id="cube-cancel-edits" name="cancel_edits" value="0">
+  <input type="hidden" name="content">
+  <input type="hidden" name="description">
+  <input type="hidden" name="tags">
+  <div class="form-group">
+    <label for="name">Name</label>
+    <input type="text" class="form-control cubelist-name" name="name" value="{{ cube.name }}">
+  </div>
+  <button type="submit" class="btn btn-warning">Save</button>
+  <button type="submit" id="btn-save-as-copy" class="btn btn-default">Save as Copy</button>
+  <button type="submit" id="btn-cancel-edits" class="btn btn-link">Cancel edits</button>
+</form>
+
+</div><!-- /#cube -->
+<!-- Left-side Column -->
+
+<!-- Right-side Column -->
+<div class="col-md-6">
+
+<div role="tabpanel">
+
+  <!-- Nav tabs -->
+  <ul class="nav nav-pills nav-justified" role="tablist" style="margin-bottom:20px">
+    <li role="presentation" class="active"><a href="#tab-pane-build" role="tab" data-toggle="tab">Build</a></li>
+    <li role="presentation"><a href="#tab-pane-infos" role="tab" data-toggle="tab">Notes</a></li>
+    <li role="presentation"><a href="#tab-pane-check" role="tab" data-toggle="tab">Check</a></li>
+    <li role="presentation"><a href="#tab-pane-history" role="tab" data-toggle="tab" id="tab-header-history">History</a></li>
+    <li role="presentation"><a href="#tab-pane-collection" role="tab" data-toggle="tab">Collection</a></li>
+    <li role="presentation"><a href="#tab-pane-settings" role="tab" data-toggle="tab">Settings</a></li>
+   </ul>
+
+   <!-- Tab panes -->
+  <div class="tab-content">
+  <!-- tabpanel Build -->
+  <div role="tabpanel" class="tab-pane active" id="tab-pane-build">
+    <!-- Search Bar -->
+    <div class="row">
+      <div class="col-sm-12" style="margin-bottom:10px">
+        <input type="text" class="form-control input-sm" id="filter-text" placeholder="Find a card or filter the list" tabindex="1">
+      </div>
+    </div>
+    <!-- Search Bar -->
+    <div class="row search-buttons">
+        <div class="col-sm-12" style="margin-bottom:10px">
+            <div id="faction_code" class="filter btn-group btn-group-justified" data-toggle="buttons"></div>
+        </div>
+        <div class="col-sm-12" style="margin-bottom:10px">
+            <div id="type_code" class="filter btn-group btn-group-justified" data-toggle="buttons"></div>
+        </div>
+    </div>
+    <!-- Collection Table (NOT the Collection pane) -->
+    <div class="row" id="collection">
+      <div class="col-sm-12">
+        <table class="table table-condensed table-hover" style="margin-bottom:10px">
+          <thead>
+            <tr>
+              <th style="min-width:85px"><a href="#" data-sort="incube">Quantity</a></th>
+              <th><a href="#" data-sort="title">Name</a><span class="caret"></span></th>
+              <th><a href="#" data-sort="faction_cost" title="Influence">I.</a></th>
+              <th class="type"><a href="#" data-sort="type_code" title="Type">T.</a></th>
+              <th class="faction"><a href="#" data-sort="faction_code" title="Faction">F.</a></th>
+            </tr>
+          </thead>
+          <tbody id="collection-table" class="collection"></tbody>
+        </table>
+      </div><!-- /.col-sm-12 -->
+      <div id="collection-grid" class="col-sm-12"></div>
+    </div><!-- /.row -->
+    <!-- Collection Table -->
+  </div>
+  <!-- tabpanel Check -->
+  <div role="tabpanel" class="tab-pane" id="tab-pane-check">
+    <!-- Graphs -->
+    <table class="table table-condensed" id="table-graph-costs">
+    <thead>
+    <tr><th colspan="1"><span class="glyphicon glyphicon-stats"></span> Repartition by Cost</th></tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td><div id="costChart"></div></td>
+    </tr>
+    </tbody>
+    </table>
+
+    <table class="table table-condensed" id="table-graph-strengths">
+    <thead>
+    <tr><th colspan="1"><span class="glyphicon glyphicon-stats"></span> Repartition by Strength</th></tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td><div id="strengthChart"></div></td>
+    </tr>
+    </tbody>
+    </table>
+  </div>
+  <!-- tabpanel Notes -->
+    <div role="tabpanel" class="tab-pane" id="tab-pane-infos">
+    <!-- Notes Form -->
+    <div class="row">
+      <div class="col-sm-12">
+        <div class="form-group">
+          <label for="tags_">Tags</label>
+          <input type="text" class="form-control" name="tags_" value="{{ cube.tags }}"></input>
+          <span class="help-block">Tags are for easy filtering in your list of cubes, e.g. <i>tournament</i> or <i>glacier</i>.</span>
+        </div>
+        <div class="form-group">
+          <label for="description_">Notes</label>
+          <textarea class="form-control" rows="20" name="description_" id="description" placeholder="Type # to enter a card name. Type $ to enter a symbol.">{{ cube.description }}</textarea>
+        </div>
+        <div class="well text-muted" id="description-preview"><small>Preview. Look <a href="http://daringfireball.net/projects/markdown/dingus">here</a> for a Markdown syntax reference.</small></div>
+      </div><!-- /.col-sm-12 -->
+    </div><!-- /.row -->
+    <!-- Notes Form -->
+    </div>
+    <!-- tabpanel History -->
+    <div role="tabpanel" class="tab-pane" id="tab-pane-history">
+    <!-- History -->
+    <div class="row">
+      <div class="col-sm-12">
+        <table class="table">
+          <thead>
+              <tr>
+                  <th>Time</th>
+                  <th>Change</th>
+                  <th>Action</th>
+              </tr>
+          </thead>
+          <tbody id="tbody-history">
+          </tbody>
+        </table>
+      </div><!-- /.col-sm-12 -->
+    </div><!-- /.row -->
+    <!-- History -->
+  </div>
+    <!-- tabpanel Collection -->
+    <div role="tabpanel" class="tab-pane" id="tab-pane-collection">
+    <div class="panel panel-default">
+      <div class="panel-heading">Select your packs |
+        <a href="#" id="collection_startup">Startup</a> |
+        <a href="#" id="collection_standard">Standard</a> |
+        <a href="#" id="collection_nsg">NSG only</a> |
+        <a href="#" id="collection_all">All</a> |
+        <a href="#" id="collection_none">None</a></div>
+      <div class="panel-body filter" id="pack_code"></div>
+    </div>
+    </div>
+    <!-- tabpanel Settings -->
+    <div role="tabpanel" class="tab-pane" id="tab-pane-settings">
+      <div class="row">
+        <fieldset class="col-md-12">
+          <div class="checkbox"><label><input type="checkbox" name="show-disabled" data-persistence> Show unusable cards</label></div>
+          <div class="checkbox"><label><input type="checkbox" name="only-cube" data-persistence> Show only used cards</label></div>
+          <div class="checkbox"><label><input type="checkbox" name="show-onesies" data-persistence> Show 1.1.1.1 format compliance</label></div>
+          <div class="checkbox"><label><input type="checkbox" name="show-cacherefresh" data-persistence> Show Cache Refresh format compliance</label></div>
+          <div class="checkbox"><label><input type="checkbox" name="check-rotation" data-persistence> Check for Rotation compliance</label></div>
+          <br>
+        </fieldset>
+      </div>
+      <div class="row">
+        <fieldset class="col-md-6 padding-bottom-md">
+          <label>Column display</label>
+          <div class="radio"><label><input type="radio" name="display-columns" value="1" data-persistence> Display on 1 column</label></div>
+          <div class="radio"><label><input type="radio" name="display-columns" value="2" data-persistence> Display on 2 columns</label></div>
+          <div class="radio"><label><input type="radio" name="display-columns" value="3" data-persistence> Display on 3 columns</label></div>
+          <br>
+        </fieldset>
+        <fieldset class="col-md-6">
+          <label>Core Set limits</label>
+          <div class="radio"><label><input type="radio" name="core-sets" value="1" data-persistence> Use 1 Core Set</label></div>
+          <div class="radio"><label><input type="radio" name="core-sets" value="2" data-persistence> Use 2 Core Sets</label></div>
+          <div class="radio"><label><input type="radio" name="core-sets" value="3" data-persistence> Use 3 Core Sets</label></div>
+          <br>
+        </fieldset>
+        <fieldset class="col-md-6">
+          <label>Card limits</label>
+          <div class="radio"><label><input type="radio" name="card-limits" value="legal" data-persistence> Legal limit</label></div>
+          <div class="radio"><label><input type="radio" name="card-limits" value="ignore" data-persistence> Ignore printed limits (casual play)</label></div>
+          <div class="radio"><label><input type="radio" name="card-limits" value="max" data-persistence> Maximum 9 (casual play)</label></div>
+          <br>
+        </fieldset>
+          <fieldset class="col-md-6">
+            <label>Sort cards</label>
+            <div class="radio"><label><input type="radio" name="sort-order" value="type" data-persistence> Sort by Type</label></div>
+            <div class="radio"><label><input type="radio" name="sort-order" value="number" data-persistence> Sort by Set</label></div>
+            <div class="radio"><label><input type="radio" name="sort-order" value="faction" data-persistence> Sort by Faction</label></div>
+            <div class="radio"><label><input type="radio" name="sort-order" value="title" data-persistence> Sort by Name</label></div>
+            <br>
+          </fieldset>
+          <fieldset class="col-md-6">
+            <label>Faction/type controls</label>
+            <div class="radio"><label><input type="radio" name="buttons-behavior" value="cumulative" data-persistence> Cumulative</label></div>
+            <div class="radio"><label><input type="radio" name="buttons-behavior" value="exclusive" data-persistence> Exclusive</label></div>
+          </fieldset>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- .col-md-8 -->
+<!-- Right-side Column -->
+
+</div><!-- .row -->
+</div><!-- .container -->
+
+{% endblock %}

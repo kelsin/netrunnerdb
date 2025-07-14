@@ -1,0 +1,22 @@
+services:
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: netrunnerdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - netrunnerdb_data:/var/lib/mysql
+  web:
+    build: .
+    depends_on:
+      - db
+    ports:
+      - "3000:80"
+    volumes:
+      - ./:/code/
+      - ../netrunner-cards-json/:/cards/
+
+volumes:
+  netrunnerdb_data:

@@ -1,0 +1,187 @@
+
+{% extends '/layout.html.twig' %}
+{% block head %}
+<script src="{{ asset('/js/nrdb.card_modal.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/nrdb.diff.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script src="{{ asset('/js/cubes.js') }}?cachebuster={{ asset_fingerprint }}"></script>
+<script type="text/javascript">
+var Cubes = {{ cubes|json_encode|raw }},
+  DisplaySort = 'type',
+  DisplaySortSecondary = 'name';
+</script>
+<style>
+  a.cube-list-group-item {
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+{% if cubes|length %}
+
+<div class="container cubes">
+
+<div class="row">
+
+<!-- Right-side column -->
+<div class="col-md-5 col-md-push-7">
+
+<div class="row" style="margin-bottom:10px">
+<div class="col-md-12">
+  <a href="{{ path('cube_new') }}" class="btn btn-default btn-sm"{% if cannotcreate %} disabled="disabled"{% endif %}><span class="glyphicon glyphicon-plus"></span> New Cube</a>
+  <div class="btn-group">
+    <button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown"{% if cannotcreate %} disabled="disabled"{% endif %}>
+      <span class="glyphicon glyphicon-import"></span> Import Cube <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" role="menu">
+      <li><a href="{{ path('cube_import') }}" id="btn-import-paste">Copy/paste</a></li>
+      <li><a href="#" onclick="$('#fileModal').modal('show')" id="btn-import-file">File</a></li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div class="row" style="margin-bottom:10px">
+<div class="col-md-12">
+<a role="button" class="btn btn-default btn-sm" href="{{ path('cubes_download_all') }}">Download all cubes</a>
+<button role="button" class="btn btn-default btn-sm" id="cubes_upload_all">Upload all cubes</button>
+</div>
+</div>
+
+<div class="row" style="margin-bottom:10px">
+<div class="col-md-12">
+  <button role="button" class="btn btn-default btn-sm" id="select_all">Select all</button>
+  <button role="button" class="btn btn-default btn-sm" id="deselect_all">Deselect all</button>
+  <div class="btn-group" id="btn-group-selection">
+    <button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+      <span class="glyphicon glyphicon-briefcase"></span> With Selection <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" role="menu">
+      <li class="dropdown-header"><span class="glyphicon glyphicon-tag"></span> Tags</li>
+      <li><a href="#" id="btn-tag-add">Add one or more tags</a></li>
+      <li><a href="#" id="btn-tag-remove-one">Remove one or more tags</a></li>
+      <li><a href="#" id="btn-tag-remove-all">Clear all tags</a></li>
+      <li class="dropdown-header"><span class="glyphicon glyphicon-trash"></span> Delete</li>
+      <li><a href="#" id="btn-delete-selected"><span style="color:red" class="glyphicon glyphicon-warning-sign"></span> Delete all cubes selected</a></li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div class="row" style="margin-bottom:10px">
+<div class="col-md-12">
+  <div class="btn-group" id="btn-group-sort">
+    <button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
+      <span class="glyphicon glyphicon-sort"></span> Sort List <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" role="menu">
+      <li><a href="#" id="btn-sort-update">By date of last update</a></li>
+      <li><a href="#" id="btn-sort-creation">By date of creation</a></li>
+      <li><a href="#" id="btn-sort-faction">By faction</a></li>
+      <li><a href="#" id="btn-sort-identity">By identity</a></li>
+      <li><a href="#" id="btn-sort-lastpack">By last datapack</a></li>
+      <li><a href="#" id="btn-sort-name">By cube name</a></li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div class="row" style="margin-bottom:10px">
+<div class="col-md-12" id="tag_toggles" title="Click to switch to this tag. Shift-click to toggle this tag.">
+</div>
+</div>
+<p><small><kbd>Enter</kbd> to open the last selected cube. <kbd>Esc</kbd> to close it.</small></p>
+</div>
+<!-- / Right-side column -->
+
+<!-- Left-side column -->
+<div class="col-md-7 col-md-pull-5">
+<h1>My private cubes <small style="font-size:16px"{% if cannotcreate %} class="text-danger"{% endif %}>({{ nbcubes }}/{{ nbmax }} slots)</small></h1>
+<div class="row">
+<div class="col-md-12">
+<div class="list-group" id="cubes" data-sort-type="date_update" data-sort-order="1">
+{% for cube in cubes %}
+<a class="list-group-item cube-list-group-item" id="cube_{{ cube.uuid }}" data-id="{{ cube.id }}" data-uuid="{{ cube.uuid }}">
+  <h4 class="cubelist-name">
+    <input type="checkbox" name="cube_select" value="{{ cube.uuid }}" style="margin-top: 0; transform: translateY(-1px)">
+    {{ cube.name }}{% if cube.message %} <span class="glyphicon glyphicon-exclamation-sign text-danger" title="{{ cube.message }}"></span>{% endif %}
+  </h4>
+  <div class="cube-list-tags">
+      {% for tag in cube.tags %}<span class="label label-default tag-{{ tag }}">{{ tag }}</span>{% endfor %}
+  </div>
+</a>
+{% endfor %}
+</div>
+</div>
+</div>
+</div>
+<!-- / Left-side column -->
+
+</div>
+</div><!-- /.container -->
+
+<div id="cube" style="display:none;margin-top:10px">
+
+  <!-- Identity and Stats -->
+  <div id="mwl" class="text-warning"></div>
+  <div id="influence"></div>
+  <div id="agendapoints"></div>
+  <div id="cardcount"></div>
+  <div id="latestpack"></div>
+  <div id="restricted"></div>
+  <div id="limited"></div>
+  <div id="ampere_agenda_limit"></div>
+  <div id="out_of_faction_agendas"></div>
+  <!-- Identity and Stats -->
+
+  <!-- Cube Content -->
+  <div class="row" id="cube-content" style="margin-bottom:10px">
+  </div><!-- /#cube-content -->
+  <!-- Cube Content -->
+
+  <div id="btn-group-cube">
+  <div style="margin-bottom:10px">
+    <a role="button" id="btn-view" class="btn btn-info btn-sm" href="#"><span class="glyphicon glyphicon-fullscreen"></span> View</a>
+    <a role="button" id="btn-edit" class="btn btn-primary btn-sm" href="#"><span class="glyphicon glyphicon-pencil"></span> Edit</a>
+    <a role="button" id="btn-pnp" class="btn btn-pnp btn-sm" href="#"><span class="glyphicon glyphicon-print"></span> Print &amp; Play</a>
+    <button type="button" id="btn-publish" disabled="disabled" class="btn btn-success btn-sm"><span class="glyphicon glyphicon-share"></span> Publish</button>
+    <button type="button" id="btn-export-tournament-sheet" class="btn btn-neutral btn-sm"><span class="glyphicon glyphicon-export"></span> Tournament Sheet</button>
+    <button type="button" id="btn-duplicate" class="btn btn-warning btn-sm"><span class="glyphicon glyphicon-plus"></span> Duplicate</button>
+    <button type="button" id="btn-delete" class="btn btn-danger btn-sm"><span class="glyphicon glyphicon-remove"></span> Delete</button>
+  </div>
+  <div style="margin-bottom:10px">
+    <button type="button" class="btn btn-default btn-xs" id="btn-download-text">Text file</button>
+    <button type="button" class="btn btn-default btn-xs" id="btn-export-bbcode">bbCode</button>
+    <button type="button" class="btn btn-default btn-xs" id="btn-export-markdown">Markdown (Reddit)</button>
+    <button type="button" class="btn btn-default btn-xs" id="btn-export-plaintext">plain text</button>
+  </div>
+  </div>
+  <div id="date_creation" class="small"></div>
+  <div id="date_update" class="small"></div>
+</div><!-- /#cube -->
+
+{% else %}
+
+<div class="jumbotron" id="no-cube-available">
+  <div class="container">
+    <h1>What, no cube?</h1>
+    <p>Cubes are awesome. You can <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-pencil"></span> Edit</span> them until you're satisfied,
+      then <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-share"></span> Publish</span> them for others to discuss.
+      And if you want to keep to yourself, you can still <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-download"></span> Download</span> them,
+      <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-export"></span> Export</span> them
+      or even <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-envelope"></span> Email</span> them.</p>
+    <p>So what are you waiting for? To create your first cube, you can either <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-plus"></span> Build</span> one from scratch using the Cubebuilder,
+      <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-import"></span> Import</span> one from the web,
+      or <span class="fake-inline-button text-primary"><span class="glyphicon glyphicon-upload"></span> Upload</span> a cube file in Octgn or simple text format.</p>
+  </div>
+</div>
+<div style="text-align:center">
+    <a href="{{ path('cube_new') }}" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-plus"></span> Build Cube</a>
+    <a href="{{ path('cube_import') }}" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-import"></span> Import</a>
+    <button type="button" class="btn btn-default btn-lg" onclick="$('#fileModal').modal('show')"><span class="glyphicon glyphicon-upload"></span> Upload</button>
+    <button type="button" class="btn btn-default btn-lg" onclick="$('#archiveModal').modal('show')"><span class="glyphicon glyphicon-upload"></span> Upload archive</button>
+</div>
+
+{% endif %}
+{% endblock %}
